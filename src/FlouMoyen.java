@@ -9,28 +9,39 @@ public class FlouMoyen implements NormeFlou{
 
     @Override
     public int[][] getRGB(BufferedImage image, int x, int y) {
-        int[][] rgb = new int
-
-        int r = 0, g = 0, b = 0;
+        int demi = taille / 2;
+        int sumR = 0, sumG = 0, sumB = 0;
         int count = 0;
 
-        for (int i = -taille%2-1; i <= taille%2+1; i++) {
-            for (int j = -taille%2-1; j <= taille%2+1; j++) {
-                int newX = x + i;
-                int newY = y + j;
+        for (int dx = -demi; dx <= demi; dx++) {
+            for (int dy = -demi; dy <= demi; dy++) {
+                int xi = x + dx;
+                int yj = y + dy;
 
-                if (newX >= 0 && newY >= 0 && newX < image.getWidth() && newY < image.getHeight()) {
-                    int rgb = image.getRGB(newX, newY);
-                    r += (rgb >> 16) & 0xFF;
-                    g += (rgb >> 8) & 0xFF;
-                    b += rgb & 0xFF;
+                if (xi >= 0 && xi < image.getWidth() && yj >= 0 && yj < image.getHeight()) {
+                    int rgb = image.getRGB(xi, yj);
+                    sumR += (rgb >> 16) & 0xFF;
+                    sumG += (rgb >> 8) & 0xFF;
+                    sumB += rgb & 0xFF;
                     count++;
                 }
             }
         }
 
-        return new int[]{r / count, g / count, b / count};
+        int avgR = sumR / count;
+        int avgG = sumG / count;
+        int avgB = sumB / count;
+
+        int[][] result = new int[3][taille * taille];
+        for (int i = 0; i < taille * taille; i++) {
+            result[0][i] = avgR;
+            result[1][i] = avgG;
+            result[2][i] = avgB;
+        }
+
+        return result;
     }
+
 
     @Override
     public int getTaille() {

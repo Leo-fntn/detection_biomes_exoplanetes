@@ -93,25 +93,44 @@ public class CopieImage {
         }
     }
 
-    public void copyImageFlou(String outputPath, NormeFlou flou){
-        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+    public void copyImageFlou(String outputPath, NormeFlou flou) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int taille = flou.getTaille();
+        int demi = taille / 2;
 
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
-                int[] rgb = flou.getRGB(image, i, j);
-                int r = rgb[0];
-                int g = rgb[1];
-                int b = rgb[2];
-                newImage.setRGB(i, j, (r << 16) | (g << 8) | b);
+        BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+
+        for (int i = demi; i < width - demi; i += taille) {
+            for (int j = demi; j < height - demi; j += taille) {
+                int[][] rgbZone = flou.getRGB(image, i, j);
+
+                for (int dx = -demi; dx <= demi; dx++) {
+                    for (int dy = -demi; dy <= demi; dy++) {
+                        int x = i + dx;
+                        int y = j + dy;
+
+                        if (x >= 0 && y >= 0 && x < width && y < height) {
+                            int index = (dx + demi) * taille + (dy + demi);
+                            int r = rgbZone[0][index];
+                            int g = rgbZone[1][index];
+                            int b = rgbZone[2][index];
+                            int rgb = (r << 16) | (g << 8) | b;
+                            newImage.setRGB(x, y, rgb);
+                        }
+                    }
+                }
             }
         }
 
         try {
-            ImageIO.write(newImage, "png", new File(outputPath));
+            ImageIO.write(newImage, "jpg", new File(outputPath));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de l'enregistrement : " + e.getMessage());
         }
     }
+
+
 
     public static void main(String[] args) {
         CopieImage copieImage = new CopieImage();
@@ -122,7 +141,7 @@ public class CopieImage {
         // Load and save the image
         copieImage.saveImage(inputPath);
 
-        FlouMoyen flou = new FlouMoyen(3);
+        FlouMoyen flou = new FlouMoyen(5);
 
         // Write the image to a new file
         copieImage.copyImageFlou(outputPath, flou);
