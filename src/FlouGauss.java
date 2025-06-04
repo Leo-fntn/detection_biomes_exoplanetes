@@ -9,7 +9,7 @@ public class FlouGauss implements NormeFlou{
 
     @Override
     public int[][] getRGB(BufferedImage image, int x, int y) {
-        
+        return new int[3][taille * taille];
     }
 
 
