@@ -52,7 +52,7 @@ public class DBSCAN implements AlgoClustering {
 
                 // On créé un nouveau cluster et on ajoute à l'intérieur tous ses voisins qui peuvent rentrer dans ce cluster
                 num_cluster += 1;
-                this.expandCluster(point, ptsVoisin, num_cluster);
+                this.expandCluster(point, ptsVoisin, num_cluster, list_num_cluster);
 
             }
 
@@ -86,8 +86,9 @@ public class DBSCAN implements AlgoClustering {
      * @param point Point initiale du nouveau cluster
      * @param ptsVoisin Liste des points voisins au point initiale
      * @param numCluster Numéro du nouveau cluster
+     * @param list_num_cluster Liste qui contient le numéro de cluster pour chaque point
      */
-    private void expandCluster(ArrayList<Integer> point, ArrayList<Integer> ptsVoisin, int numCluster) {
+    private void expandCluster(ArrayList<Integer> point, ArrayList<Integer> ptsVoisin, int numCluster, ArrayList<Integer> list_num_cluster) {
 
         // TODO
 
