@@ -6,7 +6,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,13 +13,11 @@ import java.util.Map;
 
 public class CopieImage {
     private BufferedImage image;
-    private String nameImage;
 
     public void saveImage(String imagePath) {
         try {
             // Load the image
             image = ImageIO.read(new File(imagePath));
-            nameImage = imagePath.substring(imagePath.lastIndexOf("/") + 1, imagePath.lastIndexOf("."));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -30,23 +27,27 @@ public class CopieImage {
         int width = image.getWidth();
         int height = image.getHeight();
         int taille = flou.getTaille();
-
-        while (width / taille > 750 || height / taille > 750) {
-            taille *= 5; // on augmente le flou
-        }
-
         int demi = taille / 2;
 
-        BufferedImage newImage = new BufferedImage(width/taille, height/taille, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 
         for (int i = demi; i < width - demi; i += taille) {
             for (int j = demi; j < height - demi; j += taille) {
                 int[] rgbZone = flou.getRGB(image, i, j);
-                int r = rgbZone[0];
-                int g = rgbZone[1];
-                int b = rgbZone[2];
-                int rgb = (r << 16) | (g << 8) | b;
-                newImage.setRGB(i/taille, j/taille, rgb);
+                for (int dx = -demi; dx <= demi; dx++) {
+                    for (int dy = -demi; dy <= demi; dy++) {
+                        int x = i + dx;
+                        int y = j + dy;
+
+                        if (x >= 0 && y >= 0 && x < width && y < height) {
+                            int r = rgbZone[0];
+                            int g = rgbZone[1];
+                            int b = rgbZone[2];
+                            int rgb = (r << 16) | (g << 8) | b;
+                            newImage.setRGB(x, y, rgb);
+                        }
+                    }
+                }
             }
         }
 
@@ -313,6 +314,27 @@ public class CopieImage {
         return clusterToBiome;
     }
 
+    public void resizeImage() {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        if (width <= 750 && height <= 750) return; // pas besoin de redimensionner
+
+        double ratio = Math.min(750.0 / width, 750.0 / height);
+        int newWidth = (int) (width * ratio);
+        int newHeight = (int) (height * ratio);
+
+        Image tmp = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+        BufferedImage resized = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_3BYTE_BGR);
+
+        Graphics2D g2d = resized.createGraphics();
+        g2d.drawImage(tmp, 0, 0, null);
+        g2d.dispose();
+
+        this.image = resized;
+    }
+
+
 
 
     public static void main(String[] args) {
@@ -320,7 +342,7 @@ public class CopieImage {
 
         CopieImage copieImage = new CopieImage();
 
-        String nomImage = "Planete 3";
+        String nomImage = "Planete 4";
 
         String inputPath = "cartes/"+nomImage+".jpg";
         String flouPath = "cartes2/"+nomImage+"_flou.png";
@@ -328,6 +350,9 @@ public class CopieImage {
 
         // Load and save the image
         copieImage.saveImage(inputPath);
+
+        // Reduire l'image si nécessaire
+        copieImage.resizeImage();
 
         FlouGauss flou = new FlouGauss(3);
 
@@ -358,7 +383,7 @@ public class CopieImage {
 
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
-        KMeans kmeans = new KMeans(10);
+        KMeans kmeans = new KMeans(6, 0);
 
         System.out.println("Début du calcul des clusters...");
         long startTime = System.currentTimeMillis();
@@ -387,6 +412,8 @@ public class CopieImage {
         Map<Integer,String> etiquettes = copieImage.associerClustersBiomes(list_pixel_cluster,biomes);
         System.out.println(etiquettes);
 
+        startTime = System.currentTimeMillis();
+
         for (int biomeId : etiquettes.keySet()) {
             String biomeName = etiquettes.get(biomeId);
             System.out.println("Biome " + etiquettes.get(biomeId) + " : " + allNumCluster.get(biomeId));
@@ -396,20 +423,24 @@ public class CopieImage {
             copieImage.afficherBiome(outputBiomePath,list_pixel_cluster, biomeId);
 
             // On crée un objet DBSCANPosition pour le clustering
-            DBSCANPosition dbscanPos = new DBSCANPosition(2, 1);
+            DBScan dbscanPos = new DBScan(2, 1);
 
             // On récupère les positions des pixels pour le biome actuel
             ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(list_pixel_cluster, biomeId);
 
             // On affiche le nombre de positions
-            System.out.println("\nDébut du calcul des clusters... (pour un biome)");
+            System.out.println("\nDébut du calcul des clusters... ("+biomeName+")");
             ArrayList<Integer> ecoClusters = dbscanPos.calculate_clusters(positions);
             System.out.println("Affichage des écosystèmes");
 
             // Affichage des écosystèmes
             copieImage.afficherEcosystemes("cartes2/" + nomImage+"_"+biomeName+"_clusters" + ".png", positions, ecoClusters);
-
         }
+
+        endTime = System.currentTimeMillis();
+
+        System.out.println("Temps d'exécution : " + (endTime - startTime) / 1000 + "s");
+
 
     }
 
