@@ -5,13 +5,11 @@ import normes.NormeCIELAB;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * Classe qui représente l'algorithme de clustering DBSCAN
  */
-public class DBSCAN implements AlgoClustering {
+public class DBSCANColor implements AlgoClustering {
 
 
     // Attributs
@@ -25,7 +23,7 @@ public class DBSCAN implements AlgoClustering {
      * @param e Taille du rayon de voisinage
      * @param minP Nombre minimum de point dans le rayon de voisinage d'un point pour le qualifié de "core point"
      */
-    public DBSCAN(int e, int minP) {
+    public DBSCANColor(int e, int minP) {
         this.eps = e;
         this.minPts = minP;
     }
@@ -35,6 +33,7 @@ public class DBSCAN implements AlgoClustering {
 
     @Override
     public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac) {
+
         int C = 0;
         int nbPoints = list_carac.size();
         boolean[] obj_traite = new boolean[nbPoints];

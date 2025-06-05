@@ -1,14 +1,14 @@
-import clustering.DBSCAN;
-import clustering.KMeans;
+import clustering.*;
 import normes.*;
 
 import javax.imageio.ImageIO;
-import javax.naming.InsufficientResourcesException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 public class CopieImage {
     private BufferedImage image;
@@ -161,6 +161,8 @@ public class CopieImage {
             }
         }
 
+        System.out.println(datas);
+
         return datas;
 
     }
@@ -209,7 +211,7 @@ public class CopieImage {
      * @param nbBiomes
      * @return
      */
-    public static int[] genererClusters(int width, int height, int nbBiomes) {
+    public static ArrayList<Integer> genererClusters(int width, int height, int nbBiomes) {
         int[] clusters = new int[width * height];
 
         // nombre de blocs (par ligne et colonne)
@@ -226,16 +228,17 @@ public class CopieImage {
             }
         }
 
-        return clusters;
+        Integer[] boxed = Arrays.stream(clusters).boxed().toArray(Integer[]::new);
+        return new ArrayList<>(Arrays.asList(boxed));
     }
 
-    public ArrayList<ArrayList<Integer>> getPositionsForBiome(int[] clusters, int biomeId) {
+    public ArrayList<ArrayList<Integer>> getPositionsForBiome(ArrayList<Integer> clusters, int biomeId) {
         ArrayList<ArrayList<Integer>> positions = new ArrayList<>();
 
         int width = image.getWidth();
 
-        for (int i = 0; i < clusters.length; i++) {
-            if (clusters[i] == biomeId) {
+        for (int i = 0; i < clusters.size(); i++) {
+            if (clusters.get(i) == biomeId) {
                 int x = i % width;
                 int y = i / width;
                 ArrayList<Integer> point = new ArrayList<>();
@@ -247,12 +250,33 @@ public class CopieImage {
         return positions;
     }
 
+    public void afficherEcosystemes(String outputPath, ArrayList<ArrayList<Integer>> positions, ArrayList<Integer> ecosClusters) {
+        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        Color[] palette = Palette.getRandomColors(100); // Génère 100 couleurs distinctes
+
+        for (int i = 0; i < positions.size(); i++) {
+            ArrayList<Integer> point = positions.get(i);
+            int clusterId = ecosClusters.get(i);
+            if (clusterId == -1) continue; // bruit
+
+            Color c = palette[clusterId % palette.length];
+            newImage.setRGB(point.get(0), point.get(1), c.getRGB());
+        }
+
+        try {
+            ImageIO.write(newImage, "png", new File(outputPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
     public static void main(String[] args) {
 
 
         CopieImage copieImage = new CopieImage();
+
 
 
         String inputPath = "cartes/Planete 4.jpg";
@@ -262,6 +286,7 @@ public class CopieImage {
 //        String inputPath = "cartes/carte_test.jpg";
 //        String outputPath = "cartes2/carte_test_flou.png";
 //        String outputPath2 = "cartes2/carte_testflou_gauss.png";
+
 
 
 
@@ -277,24 +302,54 @@ public class CopieImage {
 
         // On charge l'image flou
         copieImage.saveImage(outputPath2);
+        //copieImage.saveImage("cartes/carte_test.jpg");
 
 
         /*
          * CLUSTERING DBSCAN
          */
 
-        // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
         //DBSCAN clustering = new DBSCAN(5, 30);
 
-        KMeans clustering = new KMeans(10);
-        ArrayList<Integer> list_pixel_cluster = clustering.calculate_clusters(list_data);
+//        KMeans clustering = new KMeans(10);
 
         System.out.println("Résulat :");
         //System.out.println(list_pixel_cluster);
 
-        copieImage.afficherBiome(list_pixel_cluster, 1);
+        DBSCANColor clustering = new DBSCANColor(100, 5); //7 - 5
+
+        ArrayList<Integer> list_pixel_cluster = clustering.calculate_clusters(list_data);
+
+
+
+        System.out.println("\n### RESULTAT ### ");
+
+        HashMap<Integer, Integer> allNumCluster = new HashMap<>();
+        for (int numCluster : list_pixel_cluster) {
+
+            if (!allNumCluster.containsKey(numCluster)) { allNumCluster.put(numCluster, 1); }
+            else { allNumCluster.put(numCluster, allNumCluster.get(numCluster) + 1); }
+
+        }
+        System.out.println("Numéro cluster / Nombre de pixel associé");
+        System.out.println(allNumCluster);
+
+
+        copieImage.afficherBiome(list_pixel_cluster, 5);
+
+        int width = copieImage.image.getWidth();
+        int height = copieImage.image.getHeight();
+        //ArrayList<Integer> biomeClusters = CopieImage.genererClusters(width, height, 10); // 100 biomes
+
+        int biomeId = 2;
+
+        copieImage.afficherBiome(list_pixel_cluster, 2);
+        DBSCANPosition dbEcos = new DBSCANPosition(40, 3); // <- CORRIGÉ
+        ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(list_pixel_cluster,biomeId);
+        ArrayList<Integer> ecoClusters = dbEcos.calculate_clusters(positions);
+        copieImage.afficherEcosystemes("cartes2/biome_" + biomeId + "_ecos.png", positions, ecoClusters);
     }
 
 }

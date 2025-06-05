@@ -1,6 +1,7 @@
 package normes;
 
 import java.awt.*;
+import java.util.Random;
 
 public class Palette {
 
@@ -36,5 +37,14 @@ public class Palette {
             }
         }
         return closestColor;
+    }
+
+    public static Color[] getRandomColors(int n){
+        Random rand = new Random();
+        Color[] colors = new Color[n];
+        for (int i = 0; i < n; i++) {
+            colors[i] = new Color(rand.nextInt(256),rand.nextInt(256),rand.nextInt(256));
+        }
+        return colors;
     }
 }
