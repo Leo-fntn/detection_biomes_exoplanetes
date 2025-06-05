@@ -1,10 +1,16 @@
 import java.awt.image.BufferedImage;
 
 public class FlouGauss implements NormeFlou {
-    private final int taille;
-    private final double sigma;
+    private int taille;
+    private double sigma;
 
     public FlouGauss(int taille) {
+        if (taille % 2 == 0) throw new IllegalArgumentException("Taille du noyau doit être impaire");
+        this.taille = taille;
+        this.sigma = taille / 6.0;
+    }
+
+    public void setTaille(int taille) {
         if (taille % 2 == 0) throw new IllegalArgumentException("Taille du noyau doit être impaire");
         this.taille = taille;
         this.sigma = taille / 6.0;

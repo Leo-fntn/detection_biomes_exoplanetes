@@ -47,4 +47,8 @@ public class FlouMoyen implements NormeFlou{
     public int getTaille() {
         return taille;
     }
+
+    public void setTaille(int taille) {
+        this.taille = taille;
+    }
 }

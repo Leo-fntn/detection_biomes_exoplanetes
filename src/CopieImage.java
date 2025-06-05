@@ -103,6 +103,11 @@ public class CopieImage {
         int width = image.getWidth();
         int height = image.getHeight();
         int taille = flou.getTaille();
+
+        while (width / taille > 750 || height / taille > 750) {
+            taille *= 5; // on augmente le flou
+        }
+
         int demi = taille / 2;
 
         BufferedImage newImage = new BufferedImage(width/taille, height/taille, BufferedImage.TYPE_3BYTE_BGR);
@@ -110,21 +115,6 @@ public class CopieImage {
         for (int i = demi; i < width - demi; i += taille) {
             for (int j = demi; j < height - demi; j += taille) {
                 int[] rgbZone = flou.getRGB(image, i, j);
-
-//                for (int dx = -demi; dx <= demi; dx++) {
-//                    for (int dy = -demi; dy <= demi; dy++) {
-//                        int x = i + dx;
-//                        int y = j + dy;
-//
-//                        if (x >= 0 && y >= 0 && x < width && y < height) {
-//                            int r = rgbZone[0];
-//                            int g = rgbZone[1];
-//                            int b = rgbZone[2];
-//                            int rgb = (r << 16) | (g << 8) | b;
-//                            newImage.setRGB(x, y, rgb);
-//                        }
-//                    }
-//                }
                 int r = rgbZone[0];
                 int g = rgbZone[1];
                 int b = rgbZone[2];
@@ -270,6 +260,51 @@ public class CopieImage {
         }
     }
 
+    public void appliquerCouleurs(String outputPath, ArrayList<Integer> points) {
+        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+
+        // on reforme les groupes de point
+        ArrayList<ArrayList<Integer>> groups = new ArrayList<>();
+        for (int i = 0; i < points.size(); i++) {
+            int groupe = points.get(i);
+            while (groupe >= groups.size()) {
+                groups.add(new ArrayList<>());
+            }
+            groups.get(groupe).add(i);
+        }
+
+        // on calcul la couleur moyenne de chaque groupe
+        ArrayList<Color> centroids = new ArrayList<>();
+        for (ArrayList<Integer> group : groups) {
+            if (group.isEmpty()) continue;
+            int r = 0, g = 0, b = 0;
+            for (Integer index : group) {
+                int rgb = image.getRGB(index % image.getWidth(), index / image.getWidth());
+                r += (rgb >> 16) & 0xFF;
+                g += (rgb >> 8) & 0xFF;
+                b += rgb & 0xFF;
+            }
+            r /= group.size();
+            g /= group.size();
+            b /= group.size();
+            centroids.add(new Color(r, g, b));
+        }
+
+        // on applique la couleur moyenne de chaque groupe sur l'image
+        for (int i = 0; i < points.size(); i++) {
+            int groupe = points.get(i);
+            if (groupe >= centroids.size()) continue; // ignore les groupes non assignés
+            Color c = centroids.get(groupe);
+            newImage.setRGB(i % image.getWidth(), i / image.getWidth(), c.getRGB());
+        }
+
+        try {
+            ImageIO.write(newImage, "png", new File(outputPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
     public static void main(String[] args) {
@@ -313,14 +348,16 @@ public class CopieImage {
 
         //DBSCAN clustering = new DBSCAN(5, 30);
 
-//        KMeans clustering = new KMeans(10);
+        KMeans clustering = new KMeans(10);
 
-        System.out.println("Résulat :");
+//        System.out.println("Résulat :");
         //System.out.println(list_pixel_cluster);
 
-        DBSCANColor clustering = new DBSCANColor(100, 5); //7 - 5
+//        DBSCANColor clustering = new DBSCANColor(100, 5); //7 - 5
 
         ArrayList<Integer> list_pixel_cluster = clustering.calculate_clusters(list_data);
+
+        copieImage.appliquerCouleurs("cartes2/Planete4_cluster.png", list_pixel_cluster);
 
 
 

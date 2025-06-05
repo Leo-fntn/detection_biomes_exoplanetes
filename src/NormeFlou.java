@@ -17,4 +17,11 @@ public interface NormeFlou {
      * @return The size of the blur effect.
      */
     int getTaille();
+
+    /**
+     * Sets the size of the blur effect.
+     *
+     * @param taille The new size of the blur effect.
+     */
+    void setTaille(int taille);
 }
