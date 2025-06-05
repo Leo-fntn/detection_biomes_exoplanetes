@@ -185,11 +185,19 @@ public class CopieImage {
 
 
         CopieImage copieImage = new CopieImage();
-        String inputPath = "cartes/Planete 1.jpg";
-        String outputPath = "cartes2/Planete1_flou.png";
-        String outputPath2 = "cartes2/Planete1_flou_gauss.png";
+        /*
+        String inputPath = "cartes/Planete 4.jpg";
+        String outputPath = "cartes2/Planete4_flou.png";
+        String outputPath2 = "cartes2/Planete4_flou_gauss.png";
 
-        String outputPathColor = "cartes2/Planete1_color.png";
+        String outputPathColor = "cartes2/Planete4_color.png";
+        */
+
+        String inputPath = "cartes/carte_test.jpg";
+        String outputPath = "cartes2/carte_test_flou.png";
+        String outputPath2 = "cartes2/carte_testflou_gauss.png";
+
+        String outputPathColor = "cartes2/carte_test_color.png";
 
 
         // Load and save the image
@@ -245,6 +253,10 @@ public class CopieImage {
 
         // On copie l'image en utilisant la palette de couleurs
         copieImage.copyImageClosestColor(outputPathColor, p);
+        copieImage.saveImage(outputPathColor);
+
+
+
 
         /*
          * CLUSTERING DBSCAN
@@ -253,15 +265,12 @@ public class CopieImage {
         // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
-        DBSCAN dbscan = new DBSCAN(50, 5);
+        DBSCAN dbscan = new DBSCAN(2, 5);
 
-        System.out.println("Début du calcul des clusters...");
         ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
 
         System.out.println("Résulat :");
         System.out.println(list_pixel_cluster);
-
-
 
 
 
