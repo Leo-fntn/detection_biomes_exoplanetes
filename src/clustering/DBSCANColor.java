@@ -9,7 +9,7 @@ import java.util.Collections;
 /**
  * Classe qui représente l'algorithme de clustering DBSCAN
  */
-public class DBSCAN implements AlgoClustering {
+public class DBSCANColor implements AlgoClustering {
 
 
     // Attributs
@@ -23,7 +23,7 @@ public class DBSCAN implements AlgoClustering {
      * @param e Taille du rayon de voisinage
      * @param minP Nombre minimum de point dans le rayon de voisinage d'un point pour le qualifié de "core point"
      */
-    public DBSCAN(int e, int minP) {
+    public DBSCANColor(int e, int minP) {
         this.eps = e;
         this.minPts = minP;
     }

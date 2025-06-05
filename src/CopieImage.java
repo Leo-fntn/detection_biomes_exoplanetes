@@ -1,8 +1,7 @@
-import clustering.DBSCAN;
+import clustering.DBSCANColor;
 import normes.*;
 
 import javax.imageio.ImageIO;
-import javax.naming.InsufficientResourcesException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -311,7 +310,7 @@ public class CopieImage {
          */
 
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
-        DBSCAN dbscan = new DBSCAN(20, 3);
+        DBSCANColor dbscan = new DBSCANColor(20, 3);
         ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
 
 
@@ -336,7 +335,7 @@ public class CopieImage {
         ArrayList<Integer> biomeClusters = CopieImage.genererClusters(width, height, 10); // 100 biomes
 
         copieImage.afficherBiome(biomeClusters, 4);
-        DBSCAN dbEcos = new DBSCAN(100, 3); // <- CORRIGÉ
+        DBSCANColor dbEcos = new DBSCANColor(100, 3); // <- CORRIGÉ
         ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(biomeClusters,4);
         ArrayList<Integer> ecoClusters = dbEcos.calculate_clusters(positions);
         copieImage.afficherEcosystemes("cartes2/biome_" + 42 + "_ecos.png", positions, ecoClusters);
