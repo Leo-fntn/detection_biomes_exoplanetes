@@ -192,13 +192,12 @@ public class CopieImage {
 
         DBSCAN dbscan = new DBSCAN(50, 5);
 
-        dbscan.getAllDist(list_data);
-
-
         System.out.println("Début du calcul des clusters...");
         ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
+
+        System.out.println("Résulat :");
         System.out.println(list_pixel_cluster);
-        
+
 
 
 

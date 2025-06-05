@@ -36,7 +36,7 @@ public class DBSCAN implements AlgoClustering {
      * Méthode qui calcul la distance entre chaque couleur de l'image
      * @param list_carac
      */
-    public void getAllDist(ArrayList<ArrayList<Integer>> list_carac) {
+    private void getAllDist(ArrayList<ArrayList<Integer>> list_carac) {
 
         // Initialisation des variables
         HashSet<ArrayList<Integer>> list_colors = new HashSet<>();
@@ -55,21 +55,23 @@ public class DBSCAN implements AlgoClustering {
         for (ArrayList<Integer> color1 : list_colors) {
             for (ArrayList<Integer> color2 : list_colors) {
 
-                // On récupère la couleur
-                // On transforme les données R, G, B des points en objet Color
-                Color c1 = new Color(color1.get(0), color1.get(1), color1.get(2));
-                Color c2 = new Color(color2.get(0), color2.get(1), color2.get(2));
+                // Si la distance entre ces deux couleur n'est pas déjà calculée
+                if (this.list_combinaisons_distance.get(new ArrayList[]{color2, color1}) == null) {
 
-                // On calcul la distance entre ces 2 couleurs
-                double dist = norme.distanceCouleur(c1, c2);
+                    // On transforme les données R, G, B des points en objet Color
+                    Color c1 = new Color(color1.get(0), color1.get(1), color1.get(2));
+                    Color c2 = new Color(color2.get(0), color2.get(1), color2.get(2));
 
-                // On l'ajoute à la Map
-                this.list_combinaisons_distance.put(new ArrayList[]{color1, color2}, dist);
+                    // On calcul la distance entre ces 2 couleurs
+                    double dist = norme.distanceCouleur(c1, c2);
+
+                    // On l'ajoute à la Map
+                    this.list_combinaisons_distance.put(new ArrayList[]{color1, color2}, dist);
+
+                }
 
             }
         }
-
-        System.out.println(this.list_combinaisons_distance);
 
     }
 
@@ -77,6 +79,8 @@ public class DBSCAN implements AlgoClustering {
 
     @Override
     public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac) {
+
+        System.out.println("Début du calcul des clusters...");
 
         // Initialisation de toutes les distances possibles entre toutes les couleurs
         this.getAllDist(list_carac);
