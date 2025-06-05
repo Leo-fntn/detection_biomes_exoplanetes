@@ -165,6 +165,92 @@ public class CopieImage {
     }
 
 
+    /**
+     * methode pour afficher un biome par son cluster
+     * @param outputPath
+     * @param p
+     * @param clusters
+     * @param num
+     */
+    public void afficherBiome(String outputPath, Palette p,int[] clusters,int num){
+
+        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                int rgb = image.getRGB(i, j);
+                int[] tab = OutilCouleur.getTabColor(rgb);
+                int iter = 0;
+                for(int x:tab){
+                    tab[iter] = Math.round(x + (75f/100f)*(255-x));
+                    iter++;
+                }
+                Color c = new Color(tab[0],tab[1],tab[2]);
+                Color closestColor = p.getPlusProche(c);
+                newImage.setRGB(i, j, closestColor.getRGB());
+            }
+        }
+
+        for(int i=0;i<clusters.length;i++){
+            if(clusters[i]==num){
+                int x = i%image.getWidth();
+                int y = i/image.getWidth();
+                newImage.setRGB(x,y,image.getRGB(x, y));
+            }
+        }
+        try {
+            ImageIO.write(newImage, "png", new File("cartes2/test.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * methode pour generer un cluster pour tester la methode afficherBiome
+     * @param width
+     * @param height
+     * @param nbBiomes
+     * @return
+     */
+    public static int[] genererClusters(int width, int height, int nbBiomes) {
+        int[] clusters = new int[width * height];
+
+        // nombre de blocs (par ligne et colonne)
+        int blocsParLigne = (int) Math.sqrt(nbBiomes); // ex: sqrt(100) = 10
+        int blocW = width / blocsParLigne;
+        int blocH = height / blocsParLigne;
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                int blocX = j / blocW;
+                int blocY = i / blocH;
+                int biomeNum = blocY * blocsParLigne + blocX;
+                clusters[i * width + j] = biomeNum;
+            }
+        }
+
+        return clusters;
+    }
+
+    public ArrayList<ArrayList<Integer>> getPositionsForBiome(int[] clusters, int biomeId) {
+        ArrayList<ArrayList<Integer>> positions = new ArrayList<>();
+
+        int width = image.getWidth();
+
+        for (int i = 0; i < clusters.length; i++) {
+            if (clusters[i] == biomeId) {
+                int x = i % width;
+                int y = i / width;
+                ArrayList<Integer> point = new ArrayList<>();
+                point.add(x);
+                point.add(y);
+                positions.add(point);
+            }
+        }
+        return positions;
+    }
+
+
+
     public static void main(String[] args) {
 
 
