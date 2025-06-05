@@ -142,9 +142,11 @@ public class CopieImage {
         copieImage.saveImage(inputPath);
 
         FlouMoyen flou = new FlouMoyen(5);
+        FlouGauss flou2 = new FlouGauss(5);
 
         // Write the image to a new file
         copieImage.copyImageFlou(outputPath, flou);
+        copieImage.copyImageFlou(outputPath2, flou2);
 
     }
 }
