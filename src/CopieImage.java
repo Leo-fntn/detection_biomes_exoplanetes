@@ -167,12 +167,10 @@ public class CopieImage {
 
     /**
      * methode pour afficher un biome par son cluster
-     * @param outputPath
-     * @param p
      * @param clusters
      * @param num
      */
-    public void afficherBiome(int[] clusters,int num){
+    public void afficherBiome(ArrayList<Integer> clusters,int num){
 
         BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         for (int i = 0; i < image.getWidth(); i++) {
@@ -189,8 +187,8 @@ public class CopieImage {
             }
         }
 
-        for(int i=0;i<clusters.length;i++){
-            if(clusters[i]==num){
+        for(int i=0;i<clusters.size();i++){
+            if(clusters.get(i)==num){
                 int x = i%image.getWidth();
                 int y = i/image.getWidth();
                 newImage.setRGB(x,y,image.getRGB(x, y));
@@ -255,16 +253,16 @@ public class CopieImage {
 
         CopieImage copieImage = new CopieImage();
 
-        /*
+
         String inputPath = "cartes/Planete 4.jpg";
         String outputPath = "cartes2/Planete4_flou.png";
         String outputPath2 = "cartes2/Planete4_flou_gauss.png";
-        */
 
+        /*
         String inputPath = "cartes/carte_test.jpg";
         String outputPath = "cartes2/carte_test_flou.png";
         String outputPath2 = "cartes2/carte_testflou_gauss.png";
-
+        */
 
 
 
@@ -289,12 +287,14 @@ public class CopieImage {
         // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
-        DBSCAN dbscan = new DBSCAN(2, 5);
+        DBSCAN dbscan = new DBSCAN(5, 30);
 
         ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
 
         System.out.println("Résulat :");
         System.out.println(list_pixel_cluster);
+
+        copieImage.afficherBiome(list_pixel_cluster, 1);
 
 
 
