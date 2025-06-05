@@ -10,6 +10,7 @@ import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 public class CopieImage {
     private BufferedImage image;
@@ -253,6 +254,21 @@ public class CopieImage {
         BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         Color[] palette = Palette.getRandomColors(100); // Génère 100 couleurs distinctes
 
+
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                int rgb = image.getRGB(i, j);
+                int[] tab = OutilCouleur.getTabColor(rgb);
+                int iter = 0;
+                for(int x:tab){
+                    tab[iter] = Math.round(x + (75f/100f)*(255-x));
+                    iter++;
+                }
+                Color c = new Color(tab[0],tab[1],tab[2]);
+                newImage.setRGB(i, j, c.getRGB());
+            }
+        }
+
         for (int i = 0; i < positions.size(); i++) {
             ArrayList<Integer> point = positions.get(i);
             int clusterId = ecosClusters.get(i);
@@ -267,6 +283,72 @@ public class CopieImage {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Map<Integer, String> associerClustersBiomes(ArrayList<Integer> clusters, Map<String, ArrayList<Integer>> biomes) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        // Étape 1 : moyenne des couleurs par cluster
+        Map<Integer, ArrayList<Integer>> clusterToSum = new HashMap<>();
+        Map<Integer, Integer> clusterCount = new HashMap<>();
+
+        for (int i = 0; i < clusters.size(); i++) {
+            int clusterId = clusters.get(i);
+            if (clusterId <= 0) continue; // ignore bruit ou valeurs invalides
+
+            int rgb = image.getRGB(i % width, i / width);
+            int[] color = OutilCouleur.getTabColor(rgb);
+
+            clusterToSum.putIfAbsent(clusterId, new ArrayList<>(Arrays.asList(0, 0, 0)));
+            clusterCount.put(clusterId, clusterCount.getOrDefault(clusterId, 0) + 1);
+
+            ArrayList<Integer> sum = clusterToSum.get(clusterId);
+            sum.set(0, sum.get(0) + color[0]);
+            sum.set(1, sum.get(1) + color[1]);
+            sum.set(2, sum.get(2) + color[2]);
+        }
+
+        // Étape 2 : calculer la moyenne
+        Map<Integer, ArrayList<Integer>> clusterToAvg = new HashMap<>();
+        for (Map.Entry<Integer, ArrayList<Integer>> entry : clusterToSum.entrySet()) {
+            int clusterId = entry.getKey();
+            ArrayList<Integer> sum = entry.getValue();
+            int count = clusterCount.get(clusterId);
+            clusterToAvg.put(clusterId, new ArrayList<>(Arrays.asList(
+                    sum.get(0) / count,
+                    sum.get(1) / count,
+                    sum.get(2) / count
+            )));
+        }
+
+        // Étape 3 : associer au biome le plus proche
+        Map<Integer, String> clusterToBiome = new HashMap<>();
+        for (Map.Entry<Integer, ArrayList<Integer>> entry : clusterToAvg.entrySet()) {
+            int clusterId = entry.getKey();
+            ArrayList<Integer> avgColor = entry.getValue();
+
+            String bestBiome = null;
+            double minDist = Double.MAX_VALUE;
+
+            for (Map.Entry<String, ArrayList<Integer>> biome : biomes.entrySet()) {
+                ArrayList<Integer> biomeColor = biome.getValue();
+                double dist = Math.sqrt(
+                        Math.pow(avgColor.get(0) - biomeColor.get(0), 2) +
+                                Math.pow(avgColor.get(1) - biomeColor.get(1), 2) +
+                                Math.pow(avgColor.get(2) - biomeColor.get(2), 2)
+                );
+
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestBiome = biome.getKey();
+                }
+            }
+
+            clusterToBiome.put(clusterId, bestBiome);
+        }
+
+        return clusterToBiome;
     }
 
 
@@ -302,10 +384,18 @@ public class CopieImage {
         // On charge l'image flou
         copieImage.saveImage(outputPath2);
 
-
-
-
-
+        Map<String,ArrayList<Integer>> biomes = new HashMap<>();
+        biomes.put("Tundra",new ArrayList<>(Arrays.asList(71,70,61)));
+        biomes.put("Taïga",new ArrayList<>(Arrays.asList(43,50,35)));
+        biomes.put("Forêt tempérée",new ArrayList<>(Arrays.asList(59,66,43)));
+        biomes.put("Forêt tropicale",new ArrayList<>(Arrays.asList(46,64,34)));
+        biomes.put("Savane",new ArrayList<>(Arrays.asList(84,106,70)));
+        biomes.put("Prairie",new ArrayList<>(Arrays.asList(104,95,82)));
+        biomes.put("Désert",new ArrayList<>(Arrays.asList(152,140,120)));
+        biomes.put("Glacier",new ArrayList<>(Arrays.asList(200,200,200)));
+        biomes.put("Eau peu profonde",new ArrayList<>(Arrays.asList(49,83,100)));
+        biomes.put("Eau profonde",new ArrayList<>(Arrays.asList(12,31,47)));
+        biomes.put("Montagne",new ArrayList<>(Arrays.asList(210, 188, 147)));
 
 
         /*
@@ -336,18 +426,24 @@ public class CopieImage {
         System.out.println(allNumCluster);
 
 
-        copieImage.afficherBiome(list_pixel_cluster, 5);
+        //copieImage.afficherBiome(list_pixel_cluster, 5);
 
-        int biomeId = 2;
+        int biomeId = 1;
 
-        copieImage.afficherBiome(list_pixel_cluster, 2);
-        DBSCANPosition dbscanPos = new DBSCANPosition(2, 5);
+        copieImage.afficherBiome(list_pixel_cluster, biomeId);
+        DBSCANPosition dbscanPos = new DBSCANPosition(2, 1);
         ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(list_pixel_cluster, biomeId);
 
         System.out.println("\nDébut du calcul des clusters... (pour un biome)");
         ArrayList<Integer> ecoClusters = dbscanPos.calculate_clusters(positions);
         System.out.println("Affichage des écosystèmes");
-        copieImage.afficherEcosystemes("cartes2/biome_" + biomeId + "_ecos.png", positions, ecoClusters);
+        Map<Integer,String> etiquettes = copieImage.associerClustersBiomes(list_pixel_cluster,biomes);
+        System.out.println(etiquettes);
+        copieImage.afficherEcosystemes("cartes2/" +etiquettes.get(biomeId)+ ".png", positions, ecoClusters);
+
+
+
+
 
     }
 
