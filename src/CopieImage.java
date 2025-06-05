@@ -1,4 +1,5 @@
 import clustering.DBSCAN;
+import clustering.KMeans;
 import normes.*;
 
 import javax.imageio.ImageIO;
@@ -143,12 +144,12 @@ public class CopieImage {
 
         ArrayList<ArrayList<Integer>> datas = new ArrayList<>();
 
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
+        for (int i = 0; i < image.getHeight(); i++) {
+            for (int j = 0; j < image.getWidth(); j++) {
 
                 ArrayList<Integer> rbg_pixel = new ArrayList<>();
 
-                int rgb = image.getRGB(i, j);
+                int rgb = image.getRGB(j, i);
                 int[] tabColor = OutilCouleur.getTabColor(rgb);
 
                 for (int value : tabColor) {
@@ -258,11 +259,9 @@ public class CopieImage {
         String outputPath = "cartes2/Planete4_flou.png";
         String outputPath2 = "cartes2/Planete4_flou_gauss.png";
 
-        /*
-        String inputPath = "cartes/carte_test.jpg";
-        String outputPath = "cartes2/carte_test_flou.png";
-        String outputPath2 = "cartes2/carte_testflou_gauss.png";
-        */
+//        String inputPath = "cartes/carte_test.jpg";
+//        String outputPath = "cartes2/carte_test_flou.png";
+//        String outputPath2 = "cartes2/carte_testflou_gauss.png";
 
 
 
@@ -270,7 +269,7 @@ public class CopieImage {
         copieImage.saveImage(inputPath);
 
         FlouMoyen flou = new FlouMoyen(3);
-        FlouGauss flou2 = new FlouGauss(9);
+        FlouGauss flou2 = new FlouGauss(3);
 
         // Write the image to a new file
         copieImage.copyImageFlou(outputPath, flou);
@@ -287,17 +286,15 @@ public class CopieImage {
         // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
-        DBSCAN dbscan = new DBSCAN(5, 30);
+        //DBSCAN clustering = new DBSCAN(5, 30);
 
-        ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
+        KMeans clustering = new KMeans(10);
+        ArrayList<Integer> list_pixel_cluster = clustering.calculate_clusters(list_data);
 
         System.out.println("Résulat :");
-        System.out.println(list_pixel_cluster);
+        //System.out.println(list_pixel_cluster);
 
         copieImage.afficherBiome(list_pixel_cluster, 1);
-
-
-
     }
 
 }

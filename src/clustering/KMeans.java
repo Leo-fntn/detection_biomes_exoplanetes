@@ -4,10 +4,11 @@ import normes.NormeCIELAB;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class KMeans implements AlgoClustering{
 
-    private int k; // Nombre de clusters
+    private int k; // Nombre de clusters maximaux
     private ArrayList<Color> centroids; // Liste des centroïdes
 
     public KMeans(int k){
@@ -16,45 +17,99 @@ public class KMeans implements AlgoClustering{
 
     @Override
     public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac) {
+        double bestScore = Double.MAX_VALUE;
+        ArrayList<Integer> bestClustering = null;
 
+        for (int nb = 3; nb <= k; nb++) {
+            ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nb);
+
+            // Regrouper les indices par cluster
+            ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
+            for (int i = 0; i < k; i++) groupes.add(new ArrayList<>());
+            for (int i = 0; i < clustering.size(); i++) {
+                int clusterId = clustering.get(i);
+                if (clusterId >= 0) groupes.get(clusterId).add(i);
+            }
+
+            while (groupes.size()!=centroids.size()){
+                if (groupes.size() < centroids.size()) {
+                    groupes.add(new ArrayList<>()); // Ajoute un groupe vide si on a moins de groupes que de centroïdes
+                } else {
+                    // Si on a plus de groupes que de centroïdes, on ne peut pas utiliser les centroïdes initiaux
+                    centroids.add(new Color(0, 0, 0)); // Ajoute un centroïde vide pour éviter l'erreur
+                }
+            }
+            DaviesBouldin db = new DaviesBouldin(groupes, list_carac, centroids);
+            double score = db.calculerDaviesBouldin();
+            System.out.println("k=" + nb + " → DBI=" + score);
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestClustering = clustering;
+            }
+        }
+        System.out.println("Meilleur score DBI: " + bestScore);
+        return bestClustering;
+    }
+
+    public void init_centroids(ArrayList<ArrayList<Integer>> list_carac, int nb) {
+        // On initialise les centroïdes en prenant les k premières couleurs de la liste
+        centroids = new ArrayList<>();
+        // on copie la liste des caractéristiques pour ne pas la modifier
+        // puis on mélange pour avoir des centroïdes aléatoires
+        ArrayList<ArrayList<Integer>> shuffledList = new ArrayList<>(list_carac);
+        Collections.shuffle(shuffledList);
+
+        for (int i = 0; i < nb && i < list_carac.size(); i++) {
+            ArrayList<Integer> carac = list_carac.get(i);
+            centroids.add(new Color(carac.get(0), carac.get(1), carac.get(2)));
+        }
+    }
+
+    public ArrayList<Integer> calculate_single_cluster(ArrayList<ArrayList<Integer>> list_carac, int nb) {
         NormeCIELAB norme = new NormeCIELAB();
 
-        init_centroids(list_carac);
+        init_centroids(list_carac, nb);
 
         boolean maj = true;
         // On initialise les groupes
         ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
 
-        while(maj){
+        int maxIterations = 100;
+        int iteration = 0;
+
+        while(maj && iteration < maxIterations) {
             maj = false;
+            iteration++;
 
             // On initialise les groupes
             groupes = new ArrayList<>();
 
             // On construit les groupes avec les centroïdes
-            for (int i = 0; i < k; i++) {
+            for (int i = 0; i < nb; i++) {
                 groupes.add(new ArrayList<>());
             }
             // On parcourt chaque centroïde pour vérifier de quel centroïde chaque point est le plus proche
-            for (ArrayList<Integer> carac : list_carac) {
-                int index = 0;
-                double minDist = Double.MAX_VALUE;
+            for (int idx = 0; idx < list_carac.size(); idx++) {
+                ArrayList<Integer> carac = list_carac.get(idx);
 
-                // On parcourt les centroïdes pour trouver le plus proche
+                Color color = new Color(carac.get(0), carac.get(1), carac.get(2));
+                int bestIndex = 0;
+                double bestDist = Double.MAX_VALUE;
+
                 for (int i = 0; i < centroids.size(); i++) {
-                    double dist = norme.distanceCouleur(centroids.get(i), new Color(carac.get(0), carac.get(1), carac.get(2)));
-                    if (dist < minDist) {
-                        minDist = dist;
-                        index = i;
+                    double dist = norme.distanceCouleur(color, centroids.get(i));
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestIndex = i;
                     }
                 }
-
-                // On ajoute l'index du point dans le groupe correspondant
-                groupes.get(index).add(list_carac.indexOf(carac));
+                groupes.get(bestIndex).add(idx);
             }
 
+
             // On met à jour les centroïdes si il le faut
-            for (int i = 0; i < k; i++) {
+            for (int i = 0; i < nb; i++) {
                 ArrayList<Integer> groupe = groupes.get(i);
                 if (groupe.isEmpty()) continue;
 
@@ -73,7 +128,7 @@ public class KMeans implements AlgoClustering{
                 Color newCentroid = new Color(r, g, b);
 
                 // Si le centroïde a changé, on met à jour et on marque qu'il y a eu une mise à jour
-                if (!centroids.get(i).equals(newCentroid)) {
+                if (norme.distanceCouleur(centroids.get(i), newCentroid) > 1.0) {
                     centroids.set(i, newCentroid);
                     maj = true;
                 }
@@ -93,15 +148,5 @@ public class KMeans implements AlgoClustering{
             }
         }
         return list_num_cluster;
-    }
-
-    public void init_centroids(ArrayList<ArrayList<Integer>> list_carac) {
-        // On initialise les centroïdes en prenant les k premières couleurs de la liste
-        centroids = new ArrayList<>();
-        for (int i = 0; i < k && i < list_carac.size(); i++) {
-            ArrayList<Integer> carac = list_carac.get(i);
-            Color color = new Color(carac.get(0), carac.get(1), carac.get(2));
-            centroids.add(color);
-        }
     }
 }
