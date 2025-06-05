@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class CopieImage {
     private BufferedImage image;
@@ -143,12 +144,12 @@ public class CopieImage {
 
         ArrayList<ArrayList<Integer>> datas = new ArrayList<>();
 
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
+        for (int i = 0; i < image.getHeight(); i++) {
+            for (int j = 0; j < image.getWidth(); j++) {
 
                 ArrayList<Integer> rbg_pixel = new ArrayList<>();
 
-                int rgb = image.getRGB(i, j);
+                int rgb = image.getRGB(j, i);
                 int[] tabColor = OutilCouleur.getTabColor(rgb);
 
                 for (int value : tabColor) {
@@ -159,6 +160,8 @@ public class CopieImage {
 
             }
         }
+
+        System.out.println(datas);
 
         return datas;
 
@@ -254,15 +257,16 @@ public class CopieImage {
         CopieImage copieImage = new CopieImage();
 
 
+        /*
         String inputPath = "cartes/Planete 4.jpg";
         String outputPath = "cartes2/Planete4_flou.png";
         String outputPath2 = "cartes2/Planete4_flou_gauss.png";
+        */
 
-        /*
         String inputPath = "cartes/carte_test.jpg";
         String outputPath = "cartes2/carte_test_flou.png";
         String outputPath2 = "cartes2/carte_testflou_gauss.png";
-        */
+
 
 
 
@@ -277,24 +281,33 @@ public class CopieImage {
         copieImage.copyImageFlou(outputPath2, flou2);
 
         // On charge l'image flou
-        copieImage.saveImage(outputPath2);
+        // copieImage.saveImage(outputPath2);
 
 
         /*
          * CLUSTERING DBSCAN
          */
 
-        // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
-
-        DBSCAN dbscan = new DBSCAN(5, 30);
-
+        DBSCAN dbscan = new DBSCAN(20, 3);
         ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
 
-        System.out.println("Résulat :");
-        System.out.println(list_pixel_cluster);
 
-        copieImage.afficherBiome(list_pixel_cluster, 1);
+
+        System.out.println("\n### RESULTAT ### ");
+
+        HashMap<Integer, Integer> allNumCluster = new HashMap<>();
+        for (int numCluster : list_pixel_cluster) {
+
+            if (!allNumCluster.containsKey(numCluster)) { allNumCluster.put(numCluster, 1); }
+            else { allNumCluster.put(numCluster, allNumCluster.get(numCluster) + 1); }
+
+        }
+        System.out.println("Numéro cluster / Nombre de pixel associé");
+        System.out.println(allNumCluster);
+
+
+        copieImage.afficherBiome(list_pixel_cluster, 5);
 
 
 

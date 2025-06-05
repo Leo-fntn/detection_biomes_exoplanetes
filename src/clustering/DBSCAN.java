@@ -5,8 +5,6 @@ import normes.NormeCIELAB;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * Classe qui représente l'algorithme de clustering DBSCAN
@@ -35,6 +33,7 @@ public class DBSCAN implements AlgoClustering {
 
     @Override
     public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac) {
+
         int C = 0;
         int nbPoints = list_carac.size();
         boolean[] obj_traite = new boolean[nbPoints];
