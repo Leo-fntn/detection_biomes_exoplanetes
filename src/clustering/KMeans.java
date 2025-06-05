@@ -9,10 +9,12 @@ import java.util.Collections;
 public class KMeans implements AlgoClustering{
 
     private int k; // Nombre de clusters maximaux
+    private int nbClusters; //nombre de clusters, 0 mode auto
     private ArrayList<Color> centroids; // Liste des centroïdes
 
-    public KMeans(int k){
+    public KMeans(int k,int c){
         this.k = k;
+        this.nbClusters = c;
     }
 
     @Override
@@ -20,34 +22,65 @@ public class KMeans implements AlgoClustering{
         double bestScore = Double.MAX_VALUE;
         ArrayList<Integer> bestClustering = null;
 
-        for (int nb = 3; nb <= k; nb++) {
-            ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nb);
+        if(this.nbClusters==0) {
+            for (int nb = 3; nb <= k; nb++) {
+                ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nb);
+
+                // Regrouper les indices par cluster
+                ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
+                for (int i = 0; i < k; i++) groupes.add(new ArrayList<>());
+                for (int i = 0; i < clustering.size(); i++) {
+                    int clusterId = clustering.get(i);
+                    if (clusterId >= 0) groupes.get(clusterId).add(i);
+                }
+
+                while (groupes.size() != centroids.size()) {
+                    if (groupes.size() < centroids.size()) {
+                        groupes.add(new ArrayList<>()); // Ajoute un groupe vide si on a moins de groupes que de centroïdes
+                    } else {
+                        // Si on a plus de groupes que de centroïdes, on ne peut pas utiliser les centroïdes initiaux
+                        centroids.add(new Color(0, 0, 0)); // Ajoute un centroïde vide pour éviter l'erreur
+                    }
+                }
+                DaviesBouldin db = new DaviesBouldin(groupes, list_carac, centroids);
+                double score = db.calculerDaviesBouldin();
+                System.out.println("k=" + nb + " → DBI=" + score);
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestClustering = clustering;
+                }
+            }
+        } else {
+            ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nbClusters);
 
             // Regrouper les indices par cluster
             ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
-            for (int i = 0; i < k; i++) groupes.add(new ArrayList<>());
+            for (int i = 0; i < nbClusters; i++) groupes.add(new ArrayList<>());
+
             for (int i = 0; i < clustering.size(); i++) {
                 int clusterId = clustering.get(i);
-                if (clusterId >= 0) groupes.get(clusterId).add(i);
-            }
-
-            while (groupes.size()!=centroids.size()){
-                if (groupes.size() < centroids.size()) {
-                    groupes.add(new ArrayList<>()); // Ajoute un groupe vide si on a moins de groupes que de centroïdes
-                } else {
-                    // Si on a plus de groupes que de centroïdes, on ne peut pas utiliser les centroïdes initiaux
-                    centroids.add(new Color(0, 0, 0)); // Ajoute un centroïde vide pour éviter l'erreur
+                if (clusterId >= 0 && clusterId < nbClusters) {
+                    groupes.get(clusterId).add(i);
                 }
             }
+
+            // Synchroniser les centroïdes (au cas où)
+            while (groupes.size() != centroids.size()) {
+                if (groupes.size() < centroids.size()) {
+                    groupes.add(new ArrayList<>());
+                } else {
+                    centroids.add(new Color(0, 0, 0));
+                }
+            }
+
             DaviesBouldin db = new DaviesBouldin(groupes, list_carac, centroids);
             double score = db.calculerDaviesBouldin();
-            System.out.println("k=" + nb + " → DBI=" + score);
+            System.out.println("k=" + nbClusters + " (fixe) → DBI=" + score);
 
-            if (score < bestScore) {
-                bestScore = score;
-                bestClustering = clustering;
-            }
+            return clustering;
         }
+
         System.out.println("Meilleur score DBI: " + bestScore);
         return bestClustering;
     }
