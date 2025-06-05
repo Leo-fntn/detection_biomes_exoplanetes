@@ -104,27 +104,31 @@ public class CopieImage {
         int taille = flou.getTaille();
         int demi = taille / 2;
 
-        BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage newImage = new BufferedImage(width/taille, height/taille, BufferedImage.TYPE_3BYTE_BGR);
 
         for (int i = demi; i < width - demi; i += taille) {
             for (int j = demi; j < height - demi; j += taille) {
-                int[][] rgbZone = flou.getRGB(image, i, j);
+                int[] rgbZone = flou.getRGB(image, i, j);
 
-                for (int dx = -demi; dx <= demi; dx++) {
-                    for (int dy = -demi; dy <= demi; dy++) {
-                        int x = i + dx;
-                        int y = j + dy;
-
-                        if (x >= 0 && y >= 0 && x < width && y < height) {
-                            int index = (dx + demi) * taille + (dy + demi);
-                            int r = rgbZone[0][index];
-                            int g = rgbZone[1][index];
-                            int b = rgbZone[2][index];
-                            int rgb = (r << 16) | (g << 8) | b;
-                            newImage.setRGB(x, y, rgb);
-                        }
-                    }
-                }
+//                for (int dx = -demi; dx <= demi; dx++) {
+//                    for (int dy = -demi; dy <= demi; dy++) {
+//                        int x = i + dx;
+//                        int y = j + dy;
+//
+//                        if (x >= 0 && y >= 0 && x < width && y < height) {
+//                            int r = rgbZone[0];
+//                            int g = rgbZone[1];
+//                            int b = rgbZone[2];
+//                            int rgb = (r << 16) | (g << 8) | b;
+//                            newImage.setRGB(x, y, rgb);
+//                        }
+//                    }
+//                }
+                int r = rgbZone[0];
+                int g = rgbZone[1];
+                int b = rgbZone[2];
+                int rgb = (r << 16) | (g << 8) | b;
+                newImage.setRGB(i/taille, j/taille, rgb);
             }
         }
 
@@ -161,42 +165,20 @@ public class CopieImage {
     }
 
 
-    public void copyImageClosestColor(String outputPath, Palette p){
-        // create and save a new image
-        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
-                int rgb = image.getRGB(i, j);
-                Color c = new Color(rgb);
-                Color closestColor = p.getPlusProche(c);
-                newImage.setRGB(i, j, closestColor.getRGB());
-            }
-        }
-        try {
-            ImageIO.write(newImage, "png", new File(outputPath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-
     public static void main(String[] args) {
 
 
         CopieImage copieImage = new CopieImage();
-        String inputPath = "cartes/Planete 1.jpg";
-        String outputPath = "cartes2/Planete1_flou.png";
-        String outputPath2 = "cartes2/Planete1_flou_gauss.png";
-
-        String outputPathColor = "cartes2/Planete1_color.png";
+        String inputPath = "cartes/Planete 2.jpg";
+        String outputPath = "cartes2/Planete2_flouV2.png";
+        String outputPath2 = "cartes2/Planete2_flou_gaussV2.png";
 
 
         // Load and save the image
         copieImage.saveImage(inputPath);
 
         FlouMoyen flou = new FlouMoyen(3);
-        FlouGauss flou2 = new FlouGauss(5);
+        FlouGauss flou2 = new FlouGauss(9);
 
         // Write the image to a new file
         copieImage.copyImageFlou(outputPath, flou);
@@ -205,46 +187,6 @@ public class CopieImage {
         // On charge l'image flou
         copieImage.saveImage(outputPath2);
 
-
-        // On créer la palette de couleurs
-        Color[] colors = {
-                new Color(0, 0, 0),       // Black
-                new Color(255, 255, 255), // White
-                new Color(255, 0, 0),     // Red
-                new Color(0, 255, 0),     // Lime
-                new Color(0, 0, 255),     // Blue
-                new Color(255, 255, 0),   // Yellow
-                new Color(0, 255, 255),   // Cyan
-                new Color(255, 0, 255),   // Magenta
-                new Color(192, 192, 192), // Light gray
-                new Color(128, 128, 128), // Gray
-                new Color(128, 0, 0),     // Maroon
-                new Color(128, 128, 0),   // Olive
-                new Color(0, 128, 0),     // Dark Green
-                new Color(128, 0, 128),   // Purple
-                new Color(0, 128, 128),   // Teal
-                new Color(0, 0, 128),     // Navy
-
-                new Color(255, 128, 0),   // Orange
-                new Color(255, 0, 128),   // Rose
-                new Color(128, 255, 0),   // Chartreuse
-                new Color(0, 255, 128),   // Aquamarine
-                new Color(0, 128, 255),   // Sky blue
-                new Color(128, 0, 255),   // Violet
-                new Color(255, 128, 128), // Salmon
-                new Color(128, 255, 255), // Light Cyan
-                new Color(128, 255, 128), // Light Green
-                new Color(255, 255, 128), // Light Yellow
-                new Color(255, 128, 255), // Light Magenta
-                new Color(192, 0, 192),   // Deep Pink
-                new Color(64, 64, 64),    // Dark Gray
-                new Color(160, 82, 45)    // Sienna
-        };
-
-        Palette p = new Palette(colors);
-
-        // On copie l'image en utilisant la palette de couleurs
-        copieImage.copyImageClosestColor(outputPathColor, p);
 
         /*
          * CLUSTERING DBSCAN

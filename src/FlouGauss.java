@@ -16,10 +16,9 @@ public class FlouGauss implements NormeFlou {
     }
 
     @Override
-    public int[][] getRGB(BufferedImage image, int x, int y) {
-        int[][] result = new int[3][taille * taille];
+    public int[] getRGB(BufferedImage image, int x, int y) {
+        int[] result = new int[3];
         int demi = taille / 2;
-        double sigma = taille / 6.0;
 
         double[][] coeffs = new double[taille][taille];
         double kernelSum = 0.0;
@@ -55,12 +54,10 @@ public class FlouGauss implements NormeFlou {
         int finalG = (int) Math.round(sumG);
         int finalB = (int) Math.round(sumB);
 
-        // Remplir tout le tableau avec la même valeur (option : ou uniquement le centre)
-        for (int i = 0; i < taille * taille; i++) {
-            result[0][i] = finalR;
-            result[1][i] = finalG;
-            result[2][i] = finalB;
-        }
+        result[0] = finalR;
+        result[1] = finalG;
+        result[2] = finalB;
+
 
         return result;
     }

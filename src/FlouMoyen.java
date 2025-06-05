@@ -8,7 +8,7 @@ public class FlouMoyen implements NormeFlou{
     }
 
     @Override
-    public int[][] getRGB(BufferedImage image, int x, int y) {
+    public int[] getRGB(BufferedImage image, int x, int y) {
         int demi = taille / 2;
         int sumR = 0, sumG = 0, sumB = 0;
         int count = 0;
@@ -32,12 +32,12 @@ public class FlouMoyen implements NormeFlou{
         int avgG = sumG / count;
         int avgB = sumB / count;
 
-        int[][] result = new int[3][taille * taille];
-        for (int i = 0; i < taille * taille; i++) {
-            result[0][i] = avgR;
-            result[1][i] = avgG;
-            result[2][i] = avgB;
-        }
+        int[] result = new int[3];
+
+        result[0] = avgR;
+        result[1]= avgG;
+        result[2] = avgB;
+
 
         return result;
     }
