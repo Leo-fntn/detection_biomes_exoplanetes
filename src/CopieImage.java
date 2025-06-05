@@ -172,7 +172,7 @@ public class CopieImage {
      * @param clusters
      * @param num
      */
-    public void afficherBiome(String outputPath, Palette p,int[] clusters,int num){
+    public void afficherBiome(int[] clusters,int num){
 
         BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         for (int i = 0; i < image.getWidth(); i++) {
@@ -185,8 +185,7 @@ public class CopieImage {
                     iter++;
                 }
                 Color c = new Color(tab[0],tab[1],tab[2]);
-                Color closestColor = p.getPlusProche(c);
-                newImage.setRGB(i, j, closestColor.getRGB());
+                newImage.setRGB(i, j, c.getRGB());
             }
         }
 
