@@ -1,8 +1,12 @@
+import clustering.DBSCAN;
+
 import javax.imageio.ImageIO;
+import javax.naming.InsufficientResourcesException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class CopieImage {
     private BufferedImage image;
@@ -130,13 +134,40 @@ public class CopieImage {
         }
     }
 
+    public ArrayList<ArrayList<Integer>> getData() {
+
+        ArrayList<ArrayList<Integer>> datas = new ArrayList<>();
+
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+
+                ArrayList<Integer> rbg_pixel = new ArrayList<>();
+
+                int rgb = image.getRGB(i, j);
+                int[] tabColor = OutilCouleur.getTabColor(rgb);
+
+                for (int value : tabColor) {
+                    rbg_pixel.add(value);
+                }
+
+                datas.add(rbg_pixel);
+
+            }
+        }
+
+        return datas;
+
+    }
+
 
 
     public static void main(String[] args) {
+
+
         CopieImage copieImage = new CopieImage();
-        String inputPath = "cartes/Planete 1.jpg";
-        String outputPath = "cartes2/Planete1_flou.png";
-        String outputPath2 = "cartes2/Planete1_flou2.png";
+        String inputPath = "cartes/Planete 4.jpg";
+        String outputPath = "cartes2/Planete4_flou.png";
+
 
         // Load and save the image
         copieImage.saveImage(inputPath);
@@ -146,5 +177,32 @@ public class CopieImage {
         // Write the image to a new file
         copieImage.copyImageFlou(outputPath, flou);
 
+        // On charge l'image flou
+        copieImage.saveImage(outputPath);
+
+
+
+
+        /*
+         * CLUSTERING DBSCAN
+         */
+
+        // On récupère la liste des données de l'image (couleur RGB pour chaque pixel)
+        ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
+
+        DBSCAN dbscan = new DBSCAN(50, 5);
+
+        dbscan.getAllDist(list_data);
+
+
+        System.out.println("Début du calcul des clusters...");
+        ArrayList<Integer> list_pixel_cluster = dbscan.calculate_clusters(list_data);
+        System.out.println(list_pixel_cluster);
+        
+
+
+
+
     }
+
 }
