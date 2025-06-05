@@ -9,7 +9,7 @@ public interface NormeFlou {
      * @param y The y-coordinate of the pixel.
      * @return An array containing the RGB values of the pixel after applying the blur effect.
      */
-    int[][] getRGB(BufferedImage image, int x, int y);
+    int[] getRGB(BufferedImage image, int x, int y);
 
     /**
      * Returns the size of the blur effect.
