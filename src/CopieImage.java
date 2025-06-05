@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -161,8 +162,6 @@ public class CopieImage {
             }
         }
 
-        System.out.println(datas);
-
         return datas;
 
     }
@@ -302,7 +301,11 @@ public class CopieImage {
 
         // On charge l'image flou
         copieImage.saveImage(outputPath2);
-        //copieImage.saveImage("cartes/carte_test.jpg");
+
+
+
+
+
 
 
         /*
@@ -311,20 +314,16 @@ public class CopieImage {
 
         ArrayList<ArrayList<Integer>> list_data = copieImage.getData();
 
-        //DBSCAN clustering = new DBSCAN(5, 30);
+        KMeans clustering = new KMeans(10);
 
-//        KMeans clustering = new KMeans(10);
-
-        System.out.println("Résulat :");
-        //System.out.println(list_pixel_cluster);
-
-        DBSCANColor clustering = new DBSCANColor(100, 5); //7 - 5
-
+        System.out.println("Début du calcul des clusters...");
+        long startTime = System.currentTimeMillis();
         ArrayList<Integer> list_pixel_cluster = clustering.calculate_clusters(list_data);
-
+        long endTime = System.currentTimeMillis();
 
 
         System.out.println("\n### RESULTAT ### ");
+        System.out.println("Temps d'exécution : " + (endTime - startTime) / 1000 + "s");
 
         HashMap<Integer, Integer> allNumCluster = new HashMap<>();
         for (int numCluster : list_pixel_cluster) {
@@ -339,17 +338,17 @@ public class CopieImage {
 
         copieImage.afficherBiome(list_pixel_cluster, 5);
 
-        int width = copieImage.image.getWidth();
-        int height = copieImage.image.getHeight();
-        //ArrayList<Integer> biomeClusters = CopieImage.genererClusters(width, height, 10); // 100 biomes
-
         int biomeId = 2;
 
         copieImage.afficherBiome(list_pixel_cluster, 2);
-        DBSCANPosition dbEcos = new DBSCANPosition(40, 3); // <- CORRIGÉ
-        ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(list_pixel_cluster,biomeId);
-        ArrayList<Integer> ecoClusters = dbEcos.calculate_clusters(positions);
+        DBSCANPosition dbscanPos = new DBSCANPosition(2, 5);
+        ArrayList<ArrayList<Integer>> positions = copieImage.getPositionsForBiome(list_pixel_cluster, biomeId);
+
+        System.out.println("\nDébut du calcul des clusters... (pour un biome)");
+        ArrayList<Integer> ecoClusters = dbscanPos.calculate_clusters(positions);
+        System.out.println("Affichage des écosystèmes");
         copieImage.afficherEcosystemes("cartes2/biome_" + biomeId + "_ecos.png", positions, ecoClusters);
+
     }
 
 }
