@@ -9,6 +9,6 @@ public interface AlgoClustering {
      * @param list_carac Liste d'objet représenté par une liste de caractéristiques (R, G, B)
      * @return Une liste indiquant le numéro de cluster pour chaque objet de la liste passée en paramètre
      */
-    public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac);
+    public ArrayList<Integer> calculate_clusters(ArrayList<int[]> list_carac);
 
 }

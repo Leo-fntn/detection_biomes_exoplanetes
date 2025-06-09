@@ -1,52 +1,61 @@
 package clustering;
 
 import normes.NormeCIELAB;
+import normes.NormeCouleurs;
 
 import java.awt.*;
 import java.util.ArrayList;
 
 public class DaviesBouldin {
-    private ArrayList<ArrayList<Integer>> clusters;  // liste des indices de points pour chaque cluster
-    private ArrayList<ArrayList<Integer>> points;    // liste des points RGB
-    private ArrayList<Color> centroids;              // centroïdes de chaque cluster
+    private ArrayList<Integer> clusters; // liste des indices de clusters pour chaque point
+    private ArrayList<Color> points;    // liste des couleurs pour chaque point
+    private ArrayList<Color> centroids; // centroïdes de chaque cluster
 
-    public DaviesBouldin(ArrayList<ArrayList<Integer>> clusters, ArrayList<ArrayList<Integer>> points, ArrayList<Color> centroids) {
+    private final NormeCouleurs norme = new NormeCIELAB(); // norme utilisée pour le calcul des distances
+
+
+    public DaviesBouldin(ArrayList<Integer> clusters, ArrayList<Color> points, ArrayList<Color> centroids) {
         this.clusters = clusters;
         this.points = points;
         this.centroids = centroids;
     }
 
-    private double calculerDispersion(int clusterIndex) {
-        NormeCIELAB norme = new NormeCIELAB();
-        ArrayList<Integer> cluster = clusters.get(clusterIndex);
-        Color centroid = centroids.get(clusterIndex);
-        double sum = 0;
+    /**
+     * Calcul la dispersion de tous les clusters
+     * @return Un tableau de dispersion pour chaque cluster
+     */
+    private double[] calculerDispersion() {
+        double[] S = new double[centroids.size()];
+        int[] clusterSizes = new int[centroids.size()];
 
-        for (Integer pointIndex : cluster) {
-            ArrayList<Integer> rgb = points.get(pointIndex);
-            Color c = new Color(rgb.get(0), rgb.get(1), rgb.get(2));
-            double dist = norme.distanceCouleur(c, centroid);
-            if (Double.isNaN(dist)) {
-                continue;
+        // On parcourt la liste des points associés à chaque cluster
+        for (int i = 0; i < clusters.size(); i++) {
+            int clusterIndex = clusters.get(i);
+            Color pointColor = points.get(i);
+
+            // Calcule la distance entre le point et le centroïde du cluster
+            double distance = norme.distanceCouleur(pointColor, centroids.get(clusterIndex));
+
+            S[clusterIndex] += distance * distance * distance; // On accumule la distance au cube pour ne pas privilégier les points éloignés
+
+            clusterSizes[clusterIndex]++; // On compte le nombre de points dans le cluster
+        }
+
+        // On normalise la dispersion par le nombre de points dans chaque cluster
+        for (int i = 0; i < S.length; i++) {
+            if (clusterSizes[i] > 0) {
+                S[i] = S[i] / clusterSizes[i]; // Dispersion moyenne
             } else {
-                sum += dist;
+                S[i] = 0; // Si le cluster est vide, on met la dispersion à 0
             }
         }
 
-
-        return cluster.isEmpty() ? 0 : sum / cluster.size();
+        return S;
     }
 
     public double calculerDaviesBouldin() {
-        NormeCIELAB norme = new NormeCIELAB();
-
-        int k = clusters.size();
-        double[] S = new double[k];
-
-        // Calcule la dispersion pour chaque cluster
-        for (int i = 0; i < k; i++) {
-            S[i] = calculerDispersion(i);
-        }
+        int k = centroids.size();
+        double[] S = calculerDispersion();
 
         double dbiSum = 0;
 
@@ -56,15 +65,22 @@ public class DaviesBouldin {
             for (int j = 0; j < k; j++) {
                 if (i != j) {
                     double Mij = norme.distanceCouleur(centroids.get(i), centroids.get(j));
-                    if (Mij == 0 || Double.isNaN(Mij)) continue; // Évite division par 0
+                    if (Mij == 0 || Double.isNaN(Mij)) continue;
                     double Rij = (S[i] + S[j]) / Mij;
-                    maxRij = Math.max(maxRij, Rij);
+                    if (!Double.isNaN(Rij) && !Double.isInfinite(Rij)) {
+                        maxRij = Math.max(maxRij, Rij);
+                    }
                 }
             }
 
-            dbiSum += maxRij;
+            if (maxRij != Double.NEGATIVE_INFINITY) {
+                dbiSum += maxRij;
+            } else {
+                k--; // on n'incrémente pas ce cluster car aucune comparaison valide
+            }
         }
 
-        return dbiSum / k;
+        return (k == 0) ? Double.POSITIVE_INFINITY : dbiSum / k;
+
     }
 }

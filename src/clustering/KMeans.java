@@ -1,185 +1,258 @@
 package clustering;
 
-import normes.NormeCIELAB;
-
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
+import java.util.List;
+
+import normes.NormeCIELAB;
 
 public class KMeans implements AlgoClustering{
 
-    private int k; // Nombre de clusters maximaux
-    private int nbClusters; //nombre de clusters, 0 mode auto
-    private ArrayList<Color> centroids; // Liste des centroïdes
+    /**
+     * Attibuts :
+     * - k : nombre maximal de clusters
+     * - ArrayList<Color> centroids : liste des centroïdes (R, G, B)
+     * - ArrayList<Color> caracteristics : liste des caractéristiques (R, G, B) de chaque objet
+     * - Map<Color, Integer> caracteristicsMap : map des caractéristiques pour un accès rapide (nombre d'objets par caractéristique)
+     * - List<Set<Color>> groupes : liste des groupes d'objets associés à chaque centroïde
+     */
 
-    public KMeans(int k,int c){
+    // Attributs fixe (même en changeant le nombre de clusters)
+    private int k; // nombre maximal de clusters
+    private ArrayList<Color> caracteristics; // liste des caractéristiques (R, G, B) de chaque objet
+    private Map<Color, Integer> colorMap; // map des caractéristiques
+
+    private ArrayList<Color> centroids; // centroïdes [r,g,b]
+    private List<Set<Color>> groupes; // liste des groupes d'objets associés à chaque centroïde
+
+
+
+    private final NormeCIELAB norme = new NormeCIELAB(); // norme utilisée pour le calcul des distances
+
+
+    /**
+     * Constructeur de la classe KMeans2
+     * @param k Nombre maximal de clusters
+     */
+    public KMeans(int k) {
         this.k = k;
-        this.nbClusters = c;
+        this.centroids = new ArrayList<>();
+        this.caracteristics = new ArrayList<>();
     }
 
-    @Override
-    public ArrayList<Integer> calculate_clusters(ArrayList<ArrayList<Integer>> list_carac) {
-        double bestScore = Double.MAX_VALUE;
-        ArrayList<Integer> bestClustering = null;
 
-        if(this.nbClusters==0) {
-            for (int nb = 3; nb <= k; nb++) {
-                ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nb);
+    /**
+     * Méthode qui créer la map des caractéristiques
+     */
+    public void create_caracteristics_map(ArrayList<int[]> list_carac) {
+        // On crée une map pour stocker les couleurs et leur fréquence
+        this.colorMap = new HashMap<>();
 
-                // Regrouper les indices par cluster
-                ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
-                for (int i = 0; i < k; i++) groupes.add(new ArrayList<>());
-                for (int i = 0; i < clustering.size(); i++) {
-                    int clusterId = clustering.get(i);
-                    if (clusterId >= 0) groupes.get(clusterId).add(i);
-                }
+        // On parcourt la liste des caractéristiques
+        // On créer l'objet Color pour chaque triplet (R, G, B)
+        for (int[] carac : list_carac) {
+            Color color = new Color(carac[0], carac[1], carac[2]);
+            // On ajoute la couleur à la liste des caractéristiques
+            caracteristics.add(color);
 
-                while (groupes.size() != centroids.size()) {
-                    if (groupes.size() < centroids.size()) {
-                        groupes.add(new ArrayList<>()); // Ajoute un groupe vide si on a moins de groupes que de centroïdes
-                    } else {
-                        // Si on a plus de groupes que de centroïdes, on ne peut pas utiliser les centroïdes initiaux
-                        centroids.add(new Color(0, 0, 0)); // Ajoute un centroïde vide pour éviter l'erreur
-                    }
-                }
-                DaviesBouldin db = new DaviesBouldin(groupes, list_carac, centroids);
-                double score = db.calculerDaviesBouldin();
-                System.out.println("k=" + nb + " → DBI=" + score);
-
-                if (score < bestScore) {
-                    bestScore = score;
-                    bestClustering = clustering;
-                }
+            // On met à jour la map des caractéristiques
+            if (colorMap.containsKey(color)) {
+                // Si la couleur est déjà présente, on incrémente son compteur
+                colorMap.put(color, colorMap.get(color) + 1);
+            } else {
+                // Sinon, on l'ajoute avec un compteur de 1
+                colorMap.put(color, 1);
             }
-        } else {
-            ArrayList<Integer> clustering = calculate_single_cluster(list_carac, nbClusters);
-
-            // Regrouper les indices par cluster
-            ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
-            for (int i = 0; i < nbClusters; i++) groupes.add(new ArrayList<>());
-
-            for (int i = 0; i < clustering.size(); i++) {
-                int clusterId = clustering.get(i);
-                if (clusterId >= 0 && clusterId < nbClusters) {
-                    groupes.get(clusterId).add(i);
-                }
-            }
-
-            // Synchroniser les centroïdes (au cas où)
-            while (groupes.size() != centroids.size()) {
-                if (groupes.size() < centroids.size()) {
-                    groupes.add(new ArrayList<>());
-                } else {
-                    centroids.add(new Color(0, 0, 0));
-                }
-            }
-
-            DaviesBouldin db = new DaviesBouldin(groupes, list_carac, centroids);
-            double score = db.calculerDaviesBouldin();
-            System.out.println("k=" + nbClusters + " (fixe) → DBI=" + score);
-
-            return clustering;
-        }
-
-        System.out.println("Meilleur score DBI: " + bestScore);
-        return bestClustering;
-    }
-
-    public void init_centroids(ArrayList<ArrayList<Integer>> list_carac, int nb) {
-        // On initialise les centroïdes en prenant les k premières couleurs de la liste
-        centroids = new ArrayList<>();
-        // on copie la liste des caractéristiques pour ne pas la modifier
-        // puis on mélange pour avoir des centroïdes aléatoires
-        ArrayList<ArrayList<Integer>> shuffledList = new ArrayList<>(list_carac);
-        Collections.shuffle(shuffledList);
-
-        for (int i = 0; i < nb && i < list_carac.size(); i++) {
-            ArrayList<Integer> carac = list_carac.get(i);
-            centroids.add(new Color(carac.get(0), carac.get(1), carac.get(2)));
         }
     }
 
-    public ArrayList<Integer> calculate_single_cluster(ArrayList<ArrayList<Integer>> list_carac, int nb) {
-        NormeCIELAB norme = new NormeCIELAB();
 
-        init_centroids(list_carac, nb);
+    /**
+     * Méthode qui permet de calculer des clusters à partir d'une liste de caractéristiques pour chaque objet
+     * @param list_carac Liste d'objet représenté par une liste de caractéristiques (R, G, B)
+     * @return Liste des indices des clusters pour chaque objet
+     */
+    public ArrayList<Integer> calculate_clusters(ArrayList<int[]> list_carac) {
+        // On crée la map des caractéristiques
+        this.create_caracteristics_map(list_carac);
 
-        boolean maj = true;
+        // On initialise les meileures valeurs
+        ArrayList<Integer> bestClusters = new ArrayList<>();
+        double bestDaviesBouldin = Double.MAX_VALUE;
+
+        for (int nbCluster = 3; nbCluster <= k; nbCluster++) {
+            // on initialise les centroïdes
+            this.init_centroids(nbCluster);
+
+            // On associe les objets à leurs centroïdes respectifs
+            this.groupes = assign_objects_to_centroids();
+
+            int nbIterations = 0;
+
+            // On itère jusqu'à ce que les centroïdes ne changent plus ou jusqu'à 100 itérations
+            while (calculate_new_centroids() && ++nbIterations < 100) {
+                this.groupes = assign_objects_to_centroids();
+            }
+
+            // On récupère les clusters
+            ArrayList<Integer> clusters = get_clusters();
+
+            // On calcule le Davies-Bouldin pour évaluer la qualité du clustering
+            DaviesBouldin db = new DaviesBouldin(clusters, caracteristics, centroids);
+            double dbi = db.calculerDaviesBouldin();
+            System.out.println("Nombre de clusters : " + nbCluster + ", Davies-Bouldin : " + dbi);
+
+            // Si le Davies-Bouldin est meilleur que le meilleur précédent, on met à jour les meilleurs clusters
+            if (dbi < bestDaviesBouldin) {
+                bestDaviesBouldin = dbi;
+                bestClusters = clusters; // On copie la liste des clusters
+            }
+
+        }
+
+        return bestClusters; // Retourne la liste des clusters
+    }
+
+
+    /**
+     * Méthode qui initialise les centroïdes
+     * @param nb Nombre de centroïdes à initialiser
+     */
+    public void init_centroids(int nb) {
+        // On initialise les centroïdes avec des couleurs aléatoires
+        this.centroids.clear();
+        for (int i = 0; i < nb; i++) {
+            // On génère une couleur aléatoire
+            int r = (int) (Math.random() * 256);
+            int g = (int) (Math.random() * 256);
+            int b = (int) (Math.random() * 256);
+            Color color = new Color(r, g, b);
+
+            // On ajoute la couleur à la liste des centroïdes
+            centroids.add(color);
+        }
+    }
+
+
+    /**
+     * Méthode qui permet associes les objets à leurs centroides respectifs
+     * @return Liste des groupes d'objets associés à chaque centroïde
+     */
+    public List<Set<Color>> assign_objects_to_centroids() {
+        // On crée une liste de groupes de couleurs associés aux centroïdes
+        List<Set<Color>> groupes = new ArrayList<>();
+
         // On initialise les groupes
-        ArrayList<ArrayList<Integer>> groupes = new ArrayList<>();
-
-        int maxIterations = 100;
-        int iteration = 0;
-
-        while(maj && iteration < maxIterations) {
-            maj = false;
-            iteration++;
-
-            // On initialise les groupes
-            groupes = new ArrayList<>();
-
-            // On construit les groupes avec les centroïdes
-            for (int i = 0; i < nb; i++) {
-                groupes.add(new ArrayList<>());
-            }
-            // On parcourt chaque centroïde pour vérifier de quel centroïde chaque point est le plus proche
-            for (int idx = 0; idx < list_carac.size(); idx++) {
-                ArrayList<Integer> carac = list_carac.get(idx);
-
-                Color color = new Color(carac.get(0), carac.get(1), carac.get(2));
-                int bestIndex = 0;
-                double bestDist = Double.MAX_VALUE;
-
-                for (int i = 0; i < centroids.size(); i++) {
-                    double dist = norme.distanceCouleur(color, centroids.get(i));
-                    if (dist < bestDist) {
-                        bestDist = dist;
-                        bestIndex = i;
-                    }
-                }
-                groupes.get(bestIndex).add(idx);
-            }
-
-
-            // On met à jour les centroïdes si il le faut
-            for (int i = 0; i < nb; i++) {
-                ArrayList<Integer> groupe = groupes.get(i);
-                if (groupe.isEmpty()) continue;
-
-                // On calcule la nouvelle couleur du centroïde
-                int r = 0, g = 0, b = 0;
-                for (Integer index : groupe) {
-                    ArrayList<Integer> carac = list_carac.get(index);
-                    r += carac.get(0);
-                    g += carac.get(1);
-                    b += carac.get(2);
-                }
-                r /= groupe.size();
-                g /= groupe.size();
-                b /= groupe.size();
-
-                Color newCentroid = new Color(r, g, b);
-
-                // Si le centroïde a changé, on met à jour et on marque qu'il y a eu une mise à jour
-                if (norme.distanceCouleur(centroids.get(i), newCentroid) > 1.0) {
-                    centroids.set(i, newCentroid);
-                    maj = true;
-                }
-            }
+        for (int i = 0; i < centroids.size(); i++) {
+            groupes.add(new HashSet<>());
         }
 
-        // On crée la liste des clusters
-        ArrayList<Integer> list_num_cluster = new ArrayList<>(list_carac.size());
-        for (int i = 0; i < list_carac.size(); i++) {
-            list_num_cluster.add(-1); // -1 indique que le point n'est pas encore assigné à un cluster
+        // On parcourt la map des caractéristiques pour associer les couleurs à leurs centroïdes respectifs
+        for (Color color : colorMap.keySet()) {
+            int closestCentroidIndex = find_closest_centroid(color);
+            groupes.get(closestCentroidIndex).add(color); // Ajouter la couleur au groupe du centroïde le plus proche
         }
-        // On assigne chaque point à son cluster
-        for (int i = 0; i < groupes.size(); i++) {
-            ArrayList<Integer> groupe = groupes.get(i);
-            for (Integer index : groupe) {
-                list_num_cluster.set(index, i);
-            }
-        }
-        return list_num_cluster;
+
+        return groupes;
     }
+
+
+    /**
+     * Méthode qui permet de trouver l'index du centroïde le plus proche d'un objet
+     * @param color Caractéristiques de l'objet (R, G, B)
+     * @return Index du centroïde le plus proche
+     */
+    public int find_closest_centroid(Color color) {
+        // on initialise l'index du centroïde le plus proche et la distance minimale
+        int closestIndex = -1;
+        double minDistance = Double.MAX_VALUE;
+
+        // On parcourt les centroïdes pour trouver le plus proche
+        for (int i = 0; i < centroids.size(); i++) {
+            Color centroid = centroids.get(i);
+
+            // Calcul de la distance entre l'objet et le centroïde
+            double distance = norme.distanceCouleur(color, centroid);
+
+            // Si la distance est plus petite que la distance minimale, on met à jour l'index et la distance minimale
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        return closestIndex;
+    }
+
+
+
+    /**
+     * Méthode qui permet de calculer les nouveaux centroïdes à partir des groupes d'objets
+     * @return true si les centroïdes ont été recalculés, false sinon
+     */
+    public boolean calculate_new_centroids() {
+        // On initialise un booléen pour savoir si au moins un centroïde a changé
+        boolean centroidsChanged = false;
+
+        // On parcourt chaque groupe pour recalculer les centroïdes
+        for (int i = 0; i < groupes.size(); i++) {
+            // On récupère le groupe d'objets associés au centroïde i
+            Set<Color> groupe = groupes.get(i);
+            if (groupe.isEmpty()) continue;
+
+            // On initialise le nouveau centroïde
+            int[] newCentroid = new int[3]; // [R, G, B]
+            int size = 0;
+
+            // On parcourt les couleurs du groupe et on calcule la moyenne
+            // On utilise la map des caractéristiques pour savoir combien d'objets sont associés à chaque couleur
+            for (Color color : groupe) {
+                int count = colorMap.get(color);
+                newCentroid[0] += color.getRed() * count;
+                newCentroid[1] += color.getGreen() * count;
+                newCentroid[2] += color.getBlue() * count;
+                size += count; // On compte le nombre total d'objets pour la moyenne
+            }
+
+            // Moyenne des valeurs
+            newCentroid[0] /= size;
+            newCentroid[1] /= size;
+            newCentroid[2] /= size;
+
+            // Vérification si le centroïde a changé
+            Color newColor = new Color(newCentroid[0], newCentroid[1], newCentroid[2]);
+            if (!centroids.get(i).equals(newColor)) {
+                centroids.set(i, newColor);
+                centroidsChanged = true;
+            }
+        }
+
+        return centroidsChanged;
+    }
+
+
+    /**
+     * Méthode qui créer et retourne la liste des clusters
+     */
+    public ArrayList<Integer> get_clusters() {
+        // On crée la liste de clustering
+        ArrayList<Integer> clustering = new ArrayList<>(Collections.nCopies(caracteristics.size(), -1));
+
+        // On parcourt les groupes de couleurs pour remplir la liste de clustering en fonction de l'index du centroïde
+        // On vérifie toutes les valeurs de la liste des caractéristiques pour l'associer à la couleur qui lui correspond
+        // On doit trouver le groupe dans lequel la couleur est présente
+        for (int i = 0; i < caracteristics.size(); i++) {
+            Color c = caracteristics.get(i); // On récupère la couleur de l'objet
+            for (int j = 0; j < groupes.size(); j++) {
+                Set<Color> groupe = groupes.get(j);
+                if (groupe.contains(c)) {
+                    clustering.set(i, j); // On associe l'index du centroïde au point
+                    break; // On sort de la boucle dès qu'on a trouvé le groupe
+                }
+            }
+        }
+        return clustering;
+    }
+
+
 }
