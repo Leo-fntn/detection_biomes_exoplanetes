@@ -6,10 +6,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class CopieImage {
     private BufferedImage image;
@@ -160,6 +157,12 @@ public class CopieImage {
     }
 
 
+    /**
+     * Récupère les positions des pixels pour un biome spécifique
+     * @param clusters
+     * @param biomeId
+     * @return
+     */
     public ArrayList<int[]> getPositionsForBiome(ArrayList<Integer> clusters, int biomeId) {
         ArrayList<int[]> positions = new ArrayList<>();
 
@@ -179,6 +182,12 @@ public class CopieImage {
     }
 
 
+    /**
+     * Affiche les écosystèmes sur l'image en utilisant les positions et les clusters
+     * @param outputPath Chemin de sortie pour l'image résultante
+     * @param positions Liste des positions des pixels
+     * @param ecosClusters Liste des clusters d'écosystèmes
+     */
     public void afficherEcosystemes(String outputPath, ArrayList<int[]> positions, ArrayList<Integer> ecosClusters) {
         BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         Color[] palette = Palette.getRandomColors(100); // Génère 100 couleurs distinctes
@@ -215,54 +224,14 @@ public class CopieImage {
     }
 
 
-    public void appliquerCouleurs(String outputPath, ArrayList<Integer> points) {
-        BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
-
-        // on reforme les groupes de point
-        ArrayList<ArrayList<Integer>> groups = new ArrayList<>();
-        for (int i = 0; i < points.size(); i++) {
-            int groupe = points.get(i);
-            while (groupe >= groups.size()) {
-                groups.add(new ArrayList<>());
-            }
-            groups.get(groupe).add(i);
-        }
-
-        // on calcul la couleur moyenne de chaque groupe
-        ArrayList<Color> centroids = new ArrayList<>();
-        for (ArrayList<Integer> group : groups) {
-            if (group.isEmpty()) continue;
-            int r = 0, g = 0, b = 0;
-            for (Integer index : group) {
-                int rgb = image.getRGB(index % image.getWidth(), index / image.getWidth());
-                r += (rgb >> 16) & 0xFF;
-                g += (rgb >> 8) & 0xFF;
-                b += rgb & 0xFF;
-            }
-            r /= group.size();
-            g /= group.size();
-            b /= group.size();
-            centroids.add(new Color(r, g, b));
-        }
-
-        // on applique la couleur moyenne de chaque groupe sur l'image
-        for (int i = 0; i < points.size(); i++) {
-            int groupe = points.get(i);
-            if (groupe >= centroids.size()) continue; // ignore les groupes non assignés
-            Color c = centroids.get(groupe);
-            newImage.setRGB(i % image.getWidth(), i / image.getWidth(), c.getRGB());
-        }
-
-        try {
-            ImageIO.write(newImage, "png", new File(outputPath));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+    /**
+     * Associe les clusters aux biomes en fonction de la moyenne des couleurs (etiquettes)
+     * @param clusters
+     * @param biomes
+     * @return
+     */
     public Map<Integer, String> associerClustersBiomes(ArrayList<Integer> clusters, Map<String, ArrayList<Integer>> biomes) {
         int width = image.getWidth();
-        int height = image.getHeight();
 
         // Étape 1 : moyenne des couleurs par cluster
         Map<Integer, ArrayList<Integer>> clusterToSum = new HashMap<>();
@@ -326,6 +295,10 @@ public class CopieImage {
         return clusterToBiome;
     }
 
+    /**
+     * Redimensionne l'image si nécessaire pour qu'elle ne dépasse pas 750x750 pixels
+     * fonction qui n'est plus utilisée dans la version actuelle
+     */
     public void resizeImage() {
         int width = image.getWidth();
         int height = image.getHeight();
@@ -348,35 +321,42 @@ public class CopieImage {
 
 
 
-
     public static void main(String[] args) {
-
-
         CopieImage copieImage = new CopieImage();
 
-        String nomImage = "Earth";
+        // On demande le nom de l'image à l'utilisateur
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Entrez le nom de l'image (avec extension) : ");
 
-        String inputPath = "cartes/"+nomImage+".png";
-        String flouPath = "cartes2/"+nomImage+"_flou.png";
-        String outputPathColor = "cartes2/"+nomImage+"_couleur.png";
+        String entree = sc.nextLine();
+
+        // On construit le chemin d'entrée de l'image
+        String inputPath = "cartes/"+entree;
+
+        // On recupère le nom de l'image
+        String nomImage = entree.substring(0, entree.lastIndexOf(".")).trim().replaceAll(" ", "_");
+        String extension = "png";
+
+        // On demande l'extension voulue par l'utilisateur pour l'image de sortie
+        System.out.println("Souhaitez-vous une extension précise pour l'image de sortie ? (png par défaut)");
+        entree = sc.nextLine();
+        if (!entree.isEmpty()) {
+            extension = entree;
+        }
+
+        String flouPath = "cartes2/"+nomImage+"_flou."+extension;
+        String outputPathColor = "cartes2/"+nomImage+"_couleur."+extension;
 
 
-        // Load and save the image
+        // On charge l'image
         copieImage.saveImage(inputPath);
 
-//        // Reduire l'image si nécessaire
-//        copieImage.resizeImage();
-
+        // On applique un flou gaussien à l'image
         FlouGauss flou = new FlouGauss(3);
-
-        // Write the image to a new file
         copieImage.copyImageFlou(flouPath, flou);
 
         // On charge l'image flou
         copieImage.saveImage(flouPath);
-
-
-
 
 
 
@@ -411,20 +391,12 @@ public class CopieImage {
 
         Palette p = new Palette(colors);
 
-        // On copie l'image en utilisant la palette de couleurs
+        // On copie l'image en utilisant la palette de couleurs pour réduire le nombre de couleurs
         copieImage.copyImageClosestColor(outputPathColor, p);
-
         copieImage.saveImage(outputPathColor);
 
 
-
-
-
-
-
-
-
-        // On
+        // Définition des biomes avec leurs couleurs moyennes
         Map<String,ArrayList<Integer>> biomes = new HashMap<>();
         biomes.put("Tundra",new ArrayList<>(Arrays.asList(71,70,61)));
         biomes.put("Taïga",new ArrayList<>(Arrays.asList(43,50,35)));
@@ -439,19 +411,18 @@ public class CopieImage {
         biomes.put("Montagne",new ArrayList<>(Arrays.asList(210, 188, 147)));
 
 
-        /*
-         * CLUSTERING DBSCAN
-         */
 
+        // On récupère les données de l'image (R, G, B) sous forme de liste
         ArrayList<int[]> list_data = copieImage.getData();
 
+        // On crée un objet KMeans pour le clustering avec 7 clusters au maximum (configurable)
         KMeans kmeans = new KMeans(7);
 
         System.out.println("Début du calcul des clusters...");
         long startTime = System.currentTimeMillis();
-        ArrayList<Integer> list_pixel_cluster = kmeans.calculate_clusters(list_data);
 
-        //copieImage.appliquerCouleurs("cartes2/"+nomImage+"_cluster.png", list_pixel_cluster);
+        // On calcule les clusters à partir des données de l'image
+        ArrayList<Integer> list_pixel_cluster = kmeans.calculate_clusters(list_data);
 
         long endTime = System.currentTimeMillis();
 
@@ -481,7 +452,7 @@ public class CopieImage {
             System.out.println("\nBiome " + etiquettes.get(biomeId) + " : " + allNumCluster.get(biomeId));
 
             // Affichage du biome
-            String outputBiomePath = "cartes2/" + nomImage + "_" + biomeName + ".png";
+            String outputBiomePath = "cartes2/" + nomImage + "_" + biomeName + "."+ extension;
             copieImage.afficherBiome(outputBiomePath,list_pixel_cluster, biomeId);
 
             // On crée un objet DBSCANPosition pour le clustering
@@ -494,7 +465,7 @@ public class CopieImage {
             System.out.println("Début du calcul des clusters... ("+biomeName+")");
             ArrayList<Integer> ecoClusters = dbscanPos.calculate_clusters(positions);
 
-            String destFichier = "cartes2/" + nomImage+"_"+biomeName+"_clusters" + ".png";
+            String destFichier = "cartes2/" + nomImage+"_"+biomeName+"_clusters" + "."+extension;
             System.out.println("Copie de l'image dans "+destFichier);
 
             // Affichage des écosystèmes

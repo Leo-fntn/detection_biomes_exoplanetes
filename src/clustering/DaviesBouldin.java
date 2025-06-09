@@ -36,7 +36,7 @@ public class DaviesBouldin {
             // Calcule la distance entre le point et le centroïde du cluster
             double distance = norme.distanceCouleur(pointColor, centroids.get(clusterIndex));
 
-            S[clusterIndex] += distance * distance * distance; // On accumule la distance au cube pour ne pas privilégier les points éloignés
+            S[clusterIndex] += distance * distance; // On accumule la distance au carré pour ne pas privilégier les points éloignés
 
             clusterSizes[clusterIndex]++; // On compte le nombre de points dans le cluster
         }

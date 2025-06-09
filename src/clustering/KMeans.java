@@ -150,6 +150,11 @@ public class KMeans implements AlgoClustering{
         // On parcourt la map des caractéristiques pour associer les couleurs à leurs centroïdes respectifs
         for (Color color : colorMap.keySet()) {
             int closestCentroidIndex = find_closest_centroid(color);
+
+            if (closestCentroidIndex < 0 || closestCentroidIndex >= groupes.size()) {
+                System.err.println("Erreur : Index de centroïde invalide " + closestCentroidIndex);
+                continue; // On ignore les couleurs qui n'ont pas de centroïde valide
+            }
             groupes.get(closestCentroidIndex).add(color); // Ajouter la couleur au groupe du centroïde le plus proche
         }
 
@@ -175,7 +180,7 @@ public class KMeans implements AlgoClustering{
             double distance = norme.distanceCouleur(color, centroid);
 
             // Si la distance est plus petite que la distance minimale, on met à jour l'index et la distance minimale
-            if (distance < minDistance) {
+            if (distance < minDistance || minDistance == Double.MAX_VALUE) {
                 minDistance = distance;
                 closestIndex = i;
             }
