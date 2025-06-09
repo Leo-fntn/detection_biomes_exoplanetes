@@ -485,7 +485,7 @@ public class CopieImage {
             copieImage.afficherBiome(outputBiomePath,list_pixel_cluster, biomeId);
 
             // On crée un objet DBSCANPosition pour le clustering
-            DBScan dbscanPos = new DBScan(2, 1);
+            DBScan dbscanPos = new DBScan(2, 9);
 
             // On récupère les positions des pixels pour le biome actuel
             ArrayList<int[]> positions = copieImage.getPositionsForBiome(list_pixel_cluster, biomeId);
